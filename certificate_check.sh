@@ -39,8 +39,8 @@ declare -a ERROR_DOM
 
 #CHECK_SITES=("www.site1.com" "smtp.site15.com:465" "some.otherservice.com:7001")
 CHECK_SITES=("www.site1.com")
-USE_PIGGYBACK="Y"
-PIGGYBACK_TARGET="chat4all.org"
+USE_PIGGYBACK="N"
+PIGGYBACK_TARGET=""
 WARN_DAYS=30
 CRIT_DAYS=15
 

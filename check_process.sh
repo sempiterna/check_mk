@@ -46,7 +46,8 @@
 # <procname>_<process/service>
 # 
 # Copyright (c) 2016, Jeroen Wierda (jeroen@wierda.com)
-# Date : 04-09-2016
+# Date    : 04-09-2016
+# Updated : 04-11-2016
 #
 # --------------------------------------------------------------------
 # This program is free software: you can redistribute it and/or modify
@@ -144,11 +145,11 @@ do
 			if [ "${!ASSOC_WHOLE}" != "" ]; then
 				GRAB_PROCESSLIST=${!ASSOC_WHOLE}
 			else
-				GRAB_PROCESSLIST=$(ps -u $USERNAME -f)
+				GRAB_PROCESSLIST=$(COLUMNS=9999 ps -u $USERNAME -f)
 				declare PS_OUTPUT_$USERNAME="${GRAB_PROCESSLIST}"
 			fi
 		else
-			GRAB_PROCESSLIST=$(ps -ef)
+			GRAB_PROCESSLIST=$(COLUMNS=9999 ps -ef)
 		fi
 
 		CHECK_PROC=$(echo "$GRAB_PROCESSLIST" |grep -v "grep" |grep "${PROC_NAME[0]}")

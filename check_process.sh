@@ -28,12 +28,12 @@
 # SHOWMEM_STAT (Y/N): Y if memory statistics should be shown.
 #
 # SHOWRUNNINGSINCE_STAT (Y/N): Y if the start time/date of the process
-# should be shown. 
+# should be shown.
 #
-# USE_PIGGYBACK (Y/N): If Y, you can send the output of the local 
+# USE_PIGGYBACK (Y/N): If Y, you can send the output of the local
 # check to another check_mk defined host or dummy host.
 #
-# PIGGYBACK_TARGET: Used if USE_PIGGYBACK is Y. The target is either a 
+# PIGGYBACK_TARGET: Used if USE_PIGGYBACK is Y. The target is either a
 # dummyhost or another check_mk defined host.
 #
 # PREFIX: This is useful if output of this check is shown inside
@@ -44,10 +44,10 @@
 # <subdomain>_<name>_<process/service>
 #    instead of
 # <procname>_<process/service>
-# 
+#
 # Copyright (c) 2016, Jeroen Wierda (jeroen@wierda.com)
 # Date    : 04-09-2016
-# Updated : 04-11-2016
+# Updated : 23-12-2016
 #
 # --------------------------------------------------------------------
 # This program is free software: you can redistribute it and/or modify
@@ -100,10 +100,12 @@ if [ -n "$PREFIX" ]; then SRV_PREFIX="${PREFIX}_"; else SRV_PREFIX=""; fi
 
 for PROCESS_STRING in "${PROCESS_NAMES[@]}"
 do
+	SHOWRUNNINGSINCE=${SHOWRUNNINGSINCE_STAT}
+	SHOWMEM=${SHOWMEM_STAT}
 	i=0
 	declare -a PROC_ARRAY
 	IFS=':' read -r -a PROC_ARRAY <<< "${PROCESS_STRING}"
-	
+
 	while [ $i -lt 5 ]
 	do
 		if [ $i -eq 0 ] && [ -z "${PROC_ARRAY[0]}" ]; then
@@ -130,14 +132,14 @@ do
 		CHECK_INIT=$(${SERVICE_MAN} ${STATUS_A}${PROC_NAME[0]}${STATUS_B})
 		if [ $? -eq 0 ]; then SERVICE_STATUS="OK"; else SERVICE_STATUS="NOK"; fi
 
-		if [ "${SHOWMEM_STAT}" == "Y" ] || [ "${SHOWRUNNINGSINCE_STAT}" == "Y" ] || [ -n "${PROC_NAME[4]}" ]; then
+		if [ "${SHOWMEM}" == "Y" ] || [ "${SHOWRUNNINGSINCE}" == "Y" ] || [ -n "${PROC_NAME[4]}" ]; then
 			PROC_ID=$(pgrep $(if [ "$USERNAME" != "root" ]; then echo "-u $USERNAME"; fi) ${PROC_NAME[0]} -o)
-			if [ "${PROC_ID}" == "" ]; then SHOWRUNNINGSINCE_STAT="N"; SHOWMEM_STAT="N"; unset PROC_NAME[4]; fi
+			if [ "${PROC_ID}" == "" ]; then SHOWRUNNINGSINCE="N"; SHOWMEM="N"; unset PROC_NAME[4]; fi
 		fi
 	fi
 
 	if [ "${LOOKUP_TYPE}" == "process" ]; then
-	
+
 		if [ $USERNAME != "root" ]; then
 			ASSOC_SUFFIX=$USERNAME
 			declare PS_OUTPUT_$ASSOC_SUFFIX
@@ -159,8 +161,8 @@ do
 		else
 			SERVICE_STATUS="OK"
 		fi
-		
-		if [ "${SHOWMEM_STAT}" == "Y" ] || [ "${SHOWRUNNINGSINCE_STAT}" == "Y" ] || [ -n "${PROC_NAME[4]}" ]; then
+
+		if ([ "${SHOWMEM}" == "Y" ] || [ "${SHOWRUNNINGSINCE}" == "Y" ] || [ -n "${PROC_NAME[4]}" ]) && [ "${SERVICE_STATUS}" == "OK" ]; then
 			PROC_ID_A=$(echo $CHECK_PROC |awk '{print $2}')
 			#get main proc ID:
 			PROC_ID_B=$(ps -o ppid= -p ${PROC_ID_A} |sed -e 's/^[[:space:]]*//')
@@ -170,23 +172,23 @@ do
 				PROC_ID=$PROC_ID_B
 			fi
 		fi
-		
+
 	fi
 
-	if [ "${SHOWRUNNINGSINCE_STAT}" == "Y" ] || [ "${SHOWMEM_STAT}" == "Y" ]; then
+	if ([ "${SHOWRUNNINGSINCE}" == "Y" ] || [ "${SHOWMEM}" == "Y" ]) && [ "${SERVICE_STATUS}" == "OK" ]; then
 		START_BRACK="("
 		END_BRACK=")"
 	fi
 
-	if [ "${SHOWRUNNINGSINCE_STAT}" == "Y" ]; then
+	if [ "${SHOWRUNNINGSINCE}" == "Y" ] && [ "${SERVICE_STATUS}" == "OK" ]; then
 		PROC_RUN=$(ps -p $PROC_ID -o lstart=)
 		RUNNING_TEXT="Running since: ${PROC_RUN}"
 	else
 		RUNNING_TEXT=""
 	fi
 
-	if [ "${SHOWMEM_STAT}" == "Y" ]; then
-		if [ "${SHOWRUNNINGSINCE_STAT}" == "Y" ]; then SHOW_SEPARATOR=" - "; else SHOW_SEPARATOR=""; fi
+	if [ "${SHOWMEM}" == "Y" ] && [ "${SERVICE_STATUS}" == "OK" ]; then
+		if [ "${SHOWRUNNINGSINCE}" == "Y" ]; then SHOW_SEPARATOR=" - "; else SHOW_SEPARATOR=""; fi
 		PROC_MEM=$((`pmap -x $PROC_ID | tail -1 |awk '{print $3}'` * 1024))
 		PROC_MEMH=$(bytesToHuman $PROC_MEM)
 		MEM_TEXT="${SHOW_SEPARATOR}MemUse: $PROC_MEMH"

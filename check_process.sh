@@ -109,7 +109,7 @@ do
 	while [ $i -lt 5 ]
 	do
 		if [ $i -eq 0 ] && [ -z "${PROC_ARRAY[0]}" ]; then
-			continue
+			continue 2
 		elif [ $i -eq 1 ] && [ -z "${PROC_ARRAY[1]}" ]; then
 			PROC_NAME[1]=${PROC_NAME[0]}
 		elif ([ $i -eq 2 ] && [ -z "${PROC_ARRAY[2]}" ]) || ([ $i -eq 2 ] && ! [ `id -u "${PROC_ARRAY[2]}" 2> /dev/null` ]); then

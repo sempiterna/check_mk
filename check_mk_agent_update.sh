@@ -42,8 +42,12 @@
 # check_mk on a (successful) agent update. I set this to 1 (warn) in my
 # setup, so that I get notified through check_mk if the agent is updated.
 #
+# DOWNLOAD_INSECURE (Y/N): If SOURCE_PROTO is set to https, and no valid
+# ssl certificate is available, download without ssl check.
+#
 # Copyright (c) 2016, Jeroen Wierda (jeroen@wierda.com)
 # Date : 04-08-2016
+# Modify: 08-09-2018
 #
 # --------------------------------------------------------------------
 # This program is free software: you can redistribute it and/or modify
@@ -75,6 +79,7 @@ USE_PIGGYBACK="Y" #Y if results should be shown on another host
 PIGGYBACK_TARGET="Check_MK.Agents" #Target hostname
 CHECK_MK_CHECK_NAME="Check_MK Agent Updater" #only used if USE_PIGGYBACK=N
 AGENT_ISUPDATED_LEVEL="1" # 0: OK, 1: WARN, 2: CRIT, 3: UNKNOWN
+DOWNLOAD_INSECURE="N"
 
 ##no changes required below this line
 
@@ -151,12 +156,12 @@ function check_directories() {
 }
 
 download_agent() {
-	FILE_EXISTS=$(${DOWN_BIN} ${WGET_EXTRAVARS}${SOURCE_PROTO}://${SOURCE_IP}${SOURCE_LOCATION} |sed -e 's/<[^>]*>//g' |grep ${SERVER_VERSION} |grep agent |grep $1 |sed -e 's/^[[:space:]]*//' 2>/dev/null)
+	FILE_EXISTS=$(${DOWN_BIN} ${DOWN_INSECURE}${WGET_EXTRAVARS}${SOURCE_PROTO}://${SOURCE_IP}${SOURCE_LOCATION} |sed -e 's/<[^>]*>//g' |grep ${SERVER_VERSION} |grep agent |grep $1 |sed -e 's/^[[:space:]]*//' 2>/dev/null)
 	if [ -n "$FILE_EXISTS" ]; then
 		if [ -f ${DOWNLOAD_PATH}/${FILE_EXISTS} ]; then
 			log_writer "1" "File \"${FILE_EXISTS}\" already exists in ${DOWNLOAD_PATH}. Not downloading again."
 		else
-			cd ${DOWNLOAD_PATH} && $DOWN_BIN ${CURL_EXTRAVARS}${SOURCE_PROTO}://${SOURCE_IP}${SOURCE_LOCATION}${FILE_EXISTS}
+			cd ${DOWNLOAD_PATH} && $DOWN_BIN ${DOWN_INSECURE}${CURL_EXTRAVARS}${SOURCE_PROTO}://${SOURCE_IP}${SOURCE_LOCATION}${FILE_EXISTS}
 			if [ $? != 0 ]; then
 				ERROR_MSG="Something went wrong while trying to download the Check_MK agent from ${SOURCE_PROTO}://${SOURCE_IP}${SOURCE_LOCATION}${FILE_EXISTS}."
 				log_writer "2" "${ERROR_MSG}"
@@ -200,15 +205,21 @@ if [ -z "${WGET_BIN}" ]; then
 	else
 		log_writer "1" "No wget available, using ${CURL_BIN} to download."
 		DOWN_BIN="$CURL_BIN -s"
+		if [ "${SOURCE_PROTO}" == "https" ] && [ "${DOWNLOAD_INSECURE}" == "Y" ]; then
+			DOWN_INSECURE="--insecure "
+		fi
 		CURL_EXTRAVARS="-O "
 	fi
 else
 	DOWN_BIN="$WGET_BIN -q"
+	if [ "${SOURCE_PROTO}" == "https" ] && [ "${DOWNLOAD_INSECURE}" == "Y" ]; then
+		DOWN_INSECURE="--no-check-certificate "
+	fi
 	WGET_EXTRAVARS=" -O - "
 fi
 
 INSTALLED_VERSION=$(${CMK_AGENT} |head -2 | sed -n '2p' | cut -d':' -f2 |sed -e 's/^[[:space:]]*//')
-SERVER_VERSION=$(${DOWN_BIN} ${WGET_EXTRAVARS}${SOURCE_PROTO}://${SOURCE_IP}${SOURCE_LOCATION}${SOURCE_VERSIONFILE} 2>/dev/null)
+SERVER_VERSION=$(${DOWN_BIN} ${DOWN_INSECURE}${WGET_EXTRAVARS}${SOURCE_PROTO}://${SOURCE_IP}${SOURCE_LOCATION}${SOURCE_VERSIONFILE} 2>/dev/null)
 
 if [ -z "${INSTALLED_VERSION}" ]; then
 	log_writer "2" "The current version number of the Check_MK agent could not be retrieved."

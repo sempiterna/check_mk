@@ -107,7 +107,7 @@ function script_final() {
 	if [ "${CHECK_MK_CHECK}" == "Y" ] && [ "${USE_PIGGYBACK}" == "Y" ] && [ -n "${PIGGYBACK_TARGET}" ]; then
 		SERVICE_NAME=$(hostname --long)
 	else
-		SERVICE_NAME=${CHECK_NAME// /_}
+		SERVICE_NAME=${CHECK_MK_CHECK_NAME// /_}
 	fi
 
 	if [ "${CHECK_MK_CHECK}" == "Y" ] && ([ "$1" == "0" ] || [ "$1" == "1" ] || [ "$1" == "2" ]); then

@@ -47,7 +47,7 @@
 #
 # Copyright (c) 2016, Jeroen Wierda (jeroen@wierda.com)
 # Date    : 04-09-2016
-# Updated : 23-12-2016
+# Updated : 29-03-2023
 #
 # --------------------------------------------------------------------
 # This program is free software: you can redistribute it and/or modify
@@ -196,7 +196,7 @@ do
 		MEM_TEXT=""
 	fi
 
-	if [ -n "${PROC_NAME[4]}" ]; then
+	if [ -n "${PROC_NAME[4]}" ] && [ ${SERVICE_STATUS} != "NOK" ]; then
 		PROC_CONNECTED=$(netstat -p -n |grep ${PROC_NAME[4]} |tr "/" " " |awk '{print $7}' |grep $PROC_ID)
 		if [ -z "$PROC_CONNECTED" ]; then SERVICE_STATUS="WARN"; fi
 	fi
